@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Webルーレット</title>
+
+<style>
+body {
+  background: white;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+#wrapper {
+  position: relative;
+  width: 320px;
+  margin: 40px auto;
+}
+
+#wheel {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  border: 6px solid #333;
+  position: relative;
+}
+
+/* ポインタ */
+#pointer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+  border-left: 35px solid red;
+  z-index: 10;
+}
+
+/* 文字 */
+.sliceText {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+  font-size: 18px;
+  font-weight: bold;
+  width: 120px;
+  text-align: center;
+}
+
+/* ボタン */
+.startBtn, .resetBtn {
+  padding: 10px 20px;
+  margin: 5px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.startBtn { background: #6aa9ff; color: white; }
+.resetBtn { background: #ff8a8a; color: white; }
+
+#modeBtn {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+}
+
+#status {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Webルーレット</h2>
+
+<div id="wrapper">
+  <div id="wheel"></div>
+  <div id="pointer"></div>
+</div>
+
+<div>
+  <button class="startBtn" onclick="spin()">開始</button>
+  <button class="resetBtn" onclick="resetWheel()">リセット</button>
+</div>
+
+<p id="result"></p>
+
+<div>
+  <textarea id="inputItems" rows="4" cols="30">
+あ
+い
+う
+え
+  </textarea>
+</div>
+
+<button id="modeBtn">モード: ランダム</button>
+<p id="status">ランダム</p>
+
+<script>
+let items = ["あ","い","う","え"];
+let deg = 0;
+
+let mode = "random";
+let forcedIndex = 0;
+
+/* ★中の色（固定5色） */
+const sliceColors = [
+  "#f3c6a5", // 肌色
+  "#b266ff", // 紫
+  "#66a3ff", // 青
+  "#ff6666", // 赤
+  "#66ff99"  // 緑
+];
+
+// ルーレット作成
+function createWheel() {
+  const wheel = document.getElementById("wheel");
+  wheel.innerHTML = "";
+
+  const step = 360 / items.length;
+  let gradient = "conic-gradient(";
+
+  for (let i = 0; i < items.length; i++) {
+    const start = i * step;
+    const end = start + step;
+
+    // ★ここが変更ポイント（中の色）
+    gradient += `${sliceColors[i % sliceColors.length]} ${start}deg ${end}deg`;
+    if (i !== items.length - 1) gradient += ",";
+
+    const text = document.createElement("div");
+    text.className = "sliceText";
+    text.innerText = items[i];
+
+    const angle = start + step / 2;
+    const radius = 90;
+
+    text.style.transform =
+      `rotate(${angle}deg) translate(${radius}px) rotate(-${angle}deg) translate(-50%, -50%)`;
+
+    wheel.appendChild(text);
+  }
+
+  gradient += ")";
+  wheel.style.background = gradient;
+}
+
+// 入力
+document.getElementById("inputItems").addEventListener("input", () => {
+  const input = document.getElementById("inputItems").value;
+  items = input.split(/\n|,/).map(s => s.trim()).filter(s => s);
+
+  if (items.length >= 2) {
+    forcedIndex = 0;
+    createWheel();
+  }
+});
+
+// モード
+document.getElementById("modeBtn").onclick = () => {
+  mode = (mode === "random") ? "fixed" : "random";
+  updateStatus();
+};
+
+function updateStatus() {
+  document.getElementById("modeBtn").textContent =
+    "モード: " + (mode === "fixed" ? "固定" : "ランダム");
+
+  document.getElementById("status").textContent =
+    mode === "fixed" ? "固定: " + items[forcedIndex] : "ランダム";
+}
+
+// 回転
+function spin() {
+  let targetIndex;
+
+  if (mode === "fixed") {
+    targetIndex = forcedIndex;
+  } else {
+    targetIndex = Math.floor(Math.random() * items.length);
+  }
+
+  const step = 360 / items.length;
+  const targetAngle = -(targetIndex * step + step / 2);
+
+  let speed = 30;
+
+  const interval = setInterval(() => {
+    speed *= 0.97;
+    deg += speed;
+
+    document.getElementById("wheel").style.transform =
+      `rotate(${deg}deg)`;
+
+    if (speed < 0.5) {
+      clearInterval(interval);
+
+      deg = Math.round(deg) + targetAngle;
+
+      document.getElementById("wheel").style.transform =
+        `rotate(${deg}deg)`;
+
+      document.getElementById("result").textContent =
+        "結果: " + items[targetIndex];
+    }
+  }, 20);
+}
+
+// リセット
+function resetWheel() {
+  deg = 0;
+  document.getElementById("wheel").style.transform = "rotate(0deg)";
+  document.getElementById("result").textContent = "";
+}
+
+createWheel();
+updateStatus();
+</script>
+
+</body>
+</html>
