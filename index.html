@@ -158,6 +158,55 @@ textarea{
 .arrow{
   font-size:96px;
 }
+
+/* 固定モード */
+
+#secretBtn{
+  position:fixed;
+  right:10px;
+  bottom:10px;
+
+  width:42px;
+  height:42px;
+
+  border-radius:50%;
+  border:none;
+
+  background:#222;
+  color:#fff;
+
+  font-size:20px;
+  opacity:.18;
+  z-index:999;
+}
+
+#fixedPanel{
+  position:fixed;
+  right:10px;
+  bottom:60px;
+
+  background:#fff;
+  border-radius:14px;
+
+  padding:12px;
+
+  box-shadow:0 4px 18px rgba(0,0,0,.2);
+
+  z-index:999;
+}
+
+#fixedPanel select{
+  font-size:18px;
+  padding:6px;
+  margin-bottom:8px;
+  width:180px;
+}
+
+#fixedOffBtn{
+  width:100%;
+  background:#ff6b6b;
+  color:#fff;
+}
 </style>
 </head>
 
@@ -195,6 +244,17 @@ textarea{
 
 <textarea id="names"></textarea>
 
+<!-- 隠し固定ボタン -->
+<button id="secretBtn">⚙</button>
+
+<div id="fixedPanel" class="hidden">
+
+<select id="fixedSelect"></select>
+
+<button id="fixedOffBtn">固定OFF</button>
+
+</div>
+
 <script>
 const canvas=document.getElementById("wheel");
 const ctx=canvas.getContext("2d");
@@ -209,6 +269,11 @@ const resultBox=document.getElementById("result");
 const startBtn=document.getElementById("startBtn");
 const resetBtn=document.getElementById("resetBtn");
 
+const secretBtn=document.getElementById("secretBtn");
+const fixedPanel=document.getElementById("fixedPanel");
+const fixedSelect=document.getElementById("fixedSelect");
+const fixedOffBtn=document.getElementById("fixedOffBtn");
+
 const BASE_COLORS=[
 "#76ea7e",
 "#f47c6f",
@@ -221,6 +286,8 @@ let items=[];
 let colorMap=[];
 let rotation=0;
 let spinning=false;
+
+let fixedResult=null;
 
 function getItems(){
   return textarea.value
@@ -294,6 +361,19 @@ function drawWheel(rot=0){
 
   items = getItems();
 
+  fixedSelect.innerHTML="";
+
+  items.forEach(item=>{
+
+    const option=document.createElement("option");
+
+    option.value=item;
+    option.textContent=item;
+
+    fixedSelect.appendChild(option);
+
+  });
+
   if(items.length === 0){
 
     emptyBox.classList.remove("hidden");
@@ -365,6 +445,26 @@ function easeInCubic(t){
   return t*t*t;
 }
 
+secretBtn.addEventListener("click", ()=>{
+
+  fixedPanel.classList.toggle("hidden");
+
+});
+
+fixedSelect.addEventListener("change", ()=>{
+
+  fixedResult = fixedSelect.value;
+
+});
+
+fixedOffBtn.addEventListener("click", ()=>{
+
+  fixedResult = null;
+
+  fixedSelect.value="";
+
+});
+
 startBtn.addEventListener("click", ()=>{
 
   if(spinning) return;
@@ -377,8 +477,17 @@ startBtn.addEventListener("click", ()=>{
 
   const arc = Math.PI*2/items.length;
 
-  const winner =
-    Math.floor(Math.random()*items.length);
+  let winner;
+
+  if(fixedResult && items.includes(fixedResult)){
+
+    winner = items.indexOf(fixedResult);
+
+  }else{
+
+    winner = Math.floor(Math.random()*items.length);
+
+  }
 
   const pointerAngle = 0;
 
