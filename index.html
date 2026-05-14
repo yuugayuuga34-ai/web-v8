@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
@@ -35,4 +35,495 @@ h1{
   width:100%;
   max-width:860px;
   margin:auto;
-  padding:
+  padding:0 10px 36px;
+}
+
+#result{
+  width:92%;
+  max-width:760px;
+  height:54px;
+  line-height:54px;
+  border-radius:14px;
+  font-size:34px;
+  margin:8px auto 14px;
+  color:#111;
+  display:none;
+}
+
+#rouletteWrap{
+  position:relative;
+  width:min(82vw,620px);
+  height:min(82vw,620px);
+  margin:0 auto 10px;
+  overflow:hidden;
+  border-radius:50%;
+}
+
+canvas{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:transparent;
+
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.12),
+    0 6px 14px rgba(0,0,0,.16);
+}
+
+#pointer{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-2px,-50%);
+
+  width:0;
+  height:0;
+
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+  border-left:28px solid #ff1400;
+
+  z-index:5;
+}
+
+#pointerCenter{
+  position:absolute;
+  left:50%;
+  top:50%;
+
+  width:24px;
+  height:24px;
+
+  border-radius:50%;
+  background:#fff;
+  transform:translate(-50%,-50%);
+  z-index:6;
+}
+
+.buttons{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin:6px 0 18px;
+}
+
+button{
+  border:none;
+  border-radius:8px;
+  padding:13px 22px;
+  font-size:20px;
+  cursor:pointer;
+}
+
+#startBtn{
+  background:#0d7cff;
+  color:#fff;
+}
+
+#resetBtn{
+  background:#ea8e98;
+  color:#fff;
+}
+
+textarea{
+  width:100%;
+  height:300px;
+  margin-top:8px;
+  font-size:26px;
+  border:3px solid #222;
+  padding:14px;
+  resize:none;
+  background:#fff;
+}
+
+.hidden{
+  display:none !important;
+}
+
+#emptyBox{
+  width:min(88vw,560px);
+  height:360px;
+  border:2px solid #999;
+  border-radius:34px;
+  margin:18px auto;
+  background:#fff;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+.arrow{
+  font-size:96px;
+}
+
+/* 固定モード */
+
+#secretBtn{
+  position:fixed;
+  right:10px;
+  bottom:10px;
+
+  width:42px;
+  height:42px;
+
+  border-radius:50%;
+  border:none;
+
+  background:#222;
+  color:#fff;
+
+  font-size:20px;
+  opacity:.18;
+  z-index:999;
+}
+
+#fixedPanel{
+  position:fixed;
+  right:10px;
+  bottom:60px;
+
+  background:#fff;
+  border-radius:14px;
+
+  padding:12px;
+
+  box-shadow:0 4px 18px rgba(0,0,0,.2);
+
+  z-index:999;
+}
+
+#fixedPanel select{
+  font-size:18px;
+  padding:6px;
+  margin-bottom:8px;
+  width:180px;
+}
+
+#fixedOffBtn{
+  width:100%;
+  background:#ff6b6b;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<div id="wrapper">
+
+<h1>Web ルーレット</h1>
+
+<div id="emptyBox">
+  <div>リストを入力</div>
+  <div>してください</div>
+  <div class="arrow">↓↓↓</div>
+</div>
+
+<div id="result"></div>
+
+<div id="rouletteArea" class="hidden">
+
+<div id="rouletteWrap">
+
+<canvas id="wheel" width="900" height="900"></canvas>
+
+<div id="pointer"></div>
+<div id="pointerCenter"></div>
+
+</div>
+
+<div class="buttons">
+<button id="startBtn">開始</button>
+<button id="resetBtn">リセット</button>
+</div>
+
+</div>
+
+<textarea id="names"></textarea>
+
+<button id="secretBtn">⚙</button>
+
+<div id="fixedPanel" class="hidden">
+
+<select id="fixedSelect"></select>
+
+<button id="fixedOffBtn">固定OFF</button>
+
+</div>
+
+<script>
+const canvas=document.getElementById("wheel");
+const ctx=canvas.getContext("2d");
+
+const textarea=document.getElementById("names");
+
+const emptyBox=document.getElementById("emptyBox");
+const rouletteArea=document.getElementById("rouletteArea");
+
+const resultBox=document.getElementById("result");
+
+const startBtn=document.getElementById("startBtn");
+const resetBtn=document.getElementById("resetBtn");
+
+const secretBtn=document.getElementById("secretBtn");
+const fixedPanel=document.getElementById("fixedPanel");
+const fixedSelect=document.getElementById("fixedSelect");
+const fixedOffBtn=document.getElementById("fixedOffBtn");
+
+const BASE_COLORS=[
+"#76ea7e",
+"#f47c6f",
+"#4868db",
+"#e8d3a7",
+"#cb98d8"
+];
+
+let items=[];
+let colorMap=[];
+let rotation=0;
+let spinning=false;
+
+let fixedResult=null;
+
+function getItems(){
+  return textarea.value
+    .split("\n")
+    .map(v=>v.trim())
+    .filter(v=>v);
+}
+
+function buildColorMap(count){
+
+  let arr=[];
+
+  for(let i=0;i<count;i++){
+    arr.push(BASE_COLORS[i%BASE_COLORS.length]);
+  }
+
+  return arr;
+}
+
+function drawWheel(rot=0){
+
+  items = getItems();
+
+  fixedSelect.innerHTML="";
+
+  items.forEach(item=>{
+
+    const option=document.createElement("option");
+
+    option.value=item;
+    option.textContent=item;
+
+    if(item === fixedResult){
+      option.selected=true;
+    }
+
+    fixedSelect.appendChild(option);
+
+  });
+
+  if(items.length===0){
+
+    emptyBox.classList.remove("hidden");
+    rouletteArea.classList.add("hidden");
+    resultBox.style.display="none";
+
+    return;
+  }
+
+  emptyBox.classList.add("hidden");
+  rouletteArea.classList.remove("hidden");
+
+  colorMap = buildColorMap(items.length);
+
+  ctx.clearRect(0,0,900,900);
+
+  const cx=450;
+  const cy=450;
+
+  const radius=450;
+
+  const arc=Math.PI*2/items.length;
+
+  for(let i=0;i<items.length;i++){
+
+    const start = rot - Math.PI/2 + i*arc;
+    const end = start + arc;
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,radius,start,end);
+    ctx.closePath();
+
+    ctx.fillStyle=colorMap[i];
+    ctx.fill();
+
+    ctx.save();
+
+    ctx.translate(cx,cy);
+
+    ctx.rotate(start + arc/2);
+
+    ctx.fillStyle="#000";
+
+    ctx.font="66px sans-serif";
+
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+
+    ctx.fillText(items[i], radius*0.60, 0);
+
+    ctx.restore();
+  }
+}
+
+drawWheel();
+
+textarea.addEventListener("input", ()=>{
+
+  drawWheel(rotation);
+
+});
+
+function easeOutQuint(t){
+  return 1 - Math.pow(1-t,5);
+}
+
+function easeInCubic(t){
+  return t*t*t;
+}
+
+secretBtn.addEventListener("click", ()=>{
+
+  fixedPanel.classList.toggle("hidden");
+
+});
+
+fixedSelect.addEventListener("change", ()=>{
+
+  fixedResult = fixedSelect.value;
+
+});
+
+fixedOffBtn.addEventListener("click", ()=>{
+
+  fixedResult = null;
+
+});
+
+startBtn.addEventListener("click", ()=>{
+
+  if(spinning) return;
+
+  items=getItems();
+
+  if(items.length===0) return;
+
+  spinning=true;
+
+  const arc=Math.PI*2/items.length;
+
+  let winner;
+
+  if(fixedResult && items.includes(fixedResult)){
+
+    winner = items.indexOf(fixedResult);
+
+  }else{
+
+    winner = Math.floor(Math.random()*items.length);
+
+  }
+
+  /*
+    右向き矢印に完全一致
+  */
+
+  const targetRotation =
+    -(winner * arc);
+
+  const extraTurns =
+    Math.PI*2*(10 + Math.random()*2);
+
+  const currentNormalized =
+    rotation % (Math.PI*2);
+
+  const finalRotation =
+    rotation +
+    (
+      targetRotation -
+      currentNormalized
+    ) +
+    extraTurns;
+
+  const startRotation = rotation;
+
+  const duration = 9800;
+
+  const startTime = performance.now();
+
+  function animate(now){
+
+    let t=(now-startTime)/duration;
+
+    if(t>1) t=1;
+
+    let eased;
+
+    if(t<0.11){
+
+      const tt=t/0.11;
+
+      eased=easeInCubic(tt)*0.06;
+
+    }else{
+
+      const tt=(t-0.11)/0.89;
+
+      eased=0.06 + easeOutQuint(tt)*0.94;
+    }
+
+    rotation =
+      startRotation +
+      (finalRotation-startRotation)*eased;
+
+    drawWheel(rotation);
+
+    if(t<1){
+
+      requestAnimationFrame(animate);
+
+    }else{
+
+      rotation=finalRotation;
+
+      drawWheel(rotation);
+
+      resultBox.style.display="block";
+      resultBox.style.background=colorMap[winner];
+      resultBox.textContent=items[winner];
+
+      spinning=false;
+    }
+  }
+
+  requestAnimationFrame(animate);
+});
+
+resetBtn.addEventListener("click", ()=>{
+
+  rotation=0;
+
+  resultBox.style.display="none";
+
+  drawWheel(rotation);
+
+});
+</script>
+
+</body>
+</html>
