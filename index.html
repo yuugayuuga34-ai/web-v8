@@ -1,231 +1,472 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+
 <title>Webルーレット</title>
 
 <style>
-body {
-  background: white;
-  text-align: center;
-  font-family: sans-serif;
+:root{
+  --bg:#f6f1f2;
+  --text:#20242a;
 }
 
-#wrapper {
-  position: relative;
-  width: 320px;
-  margin: 40px auto;
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
 }
 
-#wheel {
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  border: 6px solid #333;
-  position: relative;
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:sans-serif;
+  color:var(--text);
+  text-align:center;
 }
 
-/* ポインタ */
-#pointer {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-top: 15px solid transparent;
-  border-bottom: 15px solid transparent;
-  border-left: 35px solid red;
-  z-index: 10;
+h1{
+  margin:22px 0 6px;
+  font-size:32px;
+  font-weight:700;
 }
 
-/* 文字 */
-.sliceText {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform-origin: 0 0;
-  font-size: 30px;
-  font-weight: bold;
-  width: 140px;
-  text-align: center;
+#wrapper{
+  width:100%;
+  max-width:860px;
+  margin:auto;
+  padding:0 10px 36px;
 }
 
-/* ボタン */
-.startBtn, .resetBtn {
-  padding: 10px 20px;
-  margin: 5px;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+#result{
+  width:92%;
+  max-width:760px;
+  height:54px;
+  line-height:54px;
+  border-radius:14px;
+  font-size:34px;
+  margin:8px auto 14px;
+  color:#111;
+  display:none;
 }
 
-.startBtn { background: #6aa9ff; color: white; }
-.resetBtn { background: #ff8a8a; color: white; }
+#rouletteWrap{
+  position:relative;
+  width:min(82vw,620px);
+  height:min(82vw,620px);
+  margin:0 auto 10px;
 
-#modeBtn {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  font-size: 12px;
+  overflow:hidden;
+  border-radius:50%;
 }
 
-#status {
-  position: fixed;
-  bottom: 10px;
-  left: 10px;
-  font-size: 12px;
-  opacity: 0.6;
+canvas{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:transparent;
+
+  box-shadow:
+    0 2px 4px rgba(0,0,0,.12),
+    0 6px 14px rgba(0,0,0,.16);
+}
+
+#pointer{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-2px,-50%);
+
+  width:0;
+  height:0;
+
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+  border-left:28px solid #ff1400;
+
+  z-index:5;
+}
+
+#pointerCenter{
+  position:absolute;
+  left:50%;
+  top:50%;
+
+  width:24px;
+  height:24px;
+
+  border-radius:50%;
+  background:#fff;
+  transform:translate(-50%,-50%);
+  z-index:6;
+}
+
+.buttons{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin:6px 0 18px;
+}
+
+button{
+  border:none;
+  border-radius:8px;
+  padding:13px 22px;
+  font-size:20px;
+  cursor:pointer;
+}
+
+#startBtn{
+  background:#0d7cff;
+  color:#fff;
+}
+
+#resetBtn{
+  background:#ea8e98;
+  color:#fff;
+}
+
+textarea{
+  width:100%;
+  height:300px;
+  margin-top:8px;
+  font-size:26px;
+  border:3px solid #222;
+  padding:14px;
+  resize:none;
+  background:#fff;
+}
+
+.hidden{
+  display:none !important;
+}
+
+#emptyBox{
+  width:min(88vw,560px);
+  height:360px;
+  border:2px solid #999;
+  border-radius:34px;
+  margin:18px auto;
+  background:#fff;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+.arrow{
+  font-size:96px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Webルーレット</h2>
-
 <div id="wrapper">
-  <div id="wheel"></div>
-  <div id="pointer"></div>
+
+<h1>Web ルーレット</h1>
+
+<div id="emptyBox">
+  <div>リストを入力</div>
+  <div>してください</div>
+  <div class="arrow">↓↓↓</div>
 </div>
 
-<div>
-  <button class="startBtn" onclick="spin()">開始</button>
-  <button class="resetBtn" onclick="resetWheel()">リセット</button>
+<div id="result"></div>
+
+<div id="rouletteArea" class="hidden">
+
+<div id="rouletteWrap">
+
+<canvas id="wheel" width="900" height="900"></canvas>
+
+<div id="pointer"></div>
+<div id="pointerCenter"></div>
+
 </div>
 
-<p id="result"></p>
-
-<div>
-  <textarea id="inputItems" rows="4" cols="30">
-あ
-い
-う
-え
-  </textarea>
+<div class="buttons">
+<button id="startBtn">開始</button>
+<button id="resetBtn">リセット</button>
 </div>
 
-<button id="modeBtn">モード: ランダム</button>
-<p id="status">ランダム</p>
+</div>
+
+<textarea id="names"></textarea>
 
 <script>
-let items = ["あ","い","う","え"];
-let deg = 0;
+const canvas=document.getElementById("wheel");
+const ctx=canvas.getContext("2d");
 
-let mode = "random";
-let forcedIndex = 0;
+const textarea=document.getElementById("names");
 
-/* ★中の色（固定5色） */
-const sliceColors = [
-  "#F5DEB3", // 肌色
-  "#DDA0DD", // 紫
-  "#4169E1", // 青
-  "#F08080", // 赤
-  "#98FB98"  // 緑
+const emptyBox=document.getElementById("emptyBox");
+const rouletteArea=document.getElementById("rouletteArea");
+
+const resultBox=document.getElementById("result");
+
+const startBtn=document.getElementById("startBtn");
+const resetBtn=document.getElementById("resetBtn");
+
+const BASE_COLORS=[
+"#76ea7e",
+"#f47c6f",
+"#4868db",
+"#e8d3a7",
+"#cb98d8"
 ];
 
-// ルーレット作成
-function createWheel() {
-  const wheel = document.getElementById("wheel");
-  wheel.innerHTML = "";
+let items=[];
+let colorMap=[];
+let rotation=0;
+let spinning=false;
 
-  const step = 360 / items.length;
-  let gradient = "conic-gradient(";
-
-  for (let i = 0; i < items.length; i++) {
-    const start = i * step;
-    const end = start + step;
-
-    // ★ここが変更ポイント（中の色）
-    gradient += `${sliceColors[i % sliceColors.length]} ${start}deg ${end}deg`;
-    if (i !== items.length - 1) gradient += ",";
-
-    const text = document.createElement("div");
-    text.className = "sliceText";
-    text.innerText = items[i];
-
-    const angle = start + step / 2;
-    const radius = 90;
-
-    text.style.transform =
-      `rotate(${angle}deg) translate(${radius}px) rotate(-${angle}deg) translate(-50%, -50%)`;
-
-    wheel.appendChild(text);
-  }
-
-  gradient += ")";
-  wheel.style.background = gradient;
+function getItems(){
+  return textarea.value
+  .split("\n")
+  .map(v=>v.trim())
+  .filter(v=>v);
 }
 
-// 入力
-document.getElementById("inputItems").addEventListener("input", () => {
-  const input = document.getElementById("inputItems").value;
-  items = input.split(/\n|,/).map(s => s.trim()).filter(s => s);
+function buildColorMap(count){
 
-  if (items.length >= 2) {
-    forcedIndex = 0;
-    createWheel();
+  let arr=[];
+
+  for(let i=0;i<count;i++){
+    arr.push(BASE_COLORS[i%BASE_COLORS.length]);
   }
+
+  for(let loop=0; loop<20; loop++){
+
+    for(let i=0;i<arr.length;i++){
+
+      for(let j=i+1;j<arr.length;j++){
+
+        if(arr[i] !== arr[j]) continue;
+
+        let dist = Math.abs(i-j);
+        dist = Math.min(dist, arr.length-dist);
+
+        if(dist <= 2){
+
+          for(let k=0;k<arr.length;k++){
+
+            if(k===i || k===j) continue;
+
+            [arr[j], arr[k]] = [arr[k], arr[j]];
+
+            if(checkGood(arr)){
+              break;
+            }
+
+            [arr[j], arr[k]] = [arr[k], arr[j]];
+          }
+        }
+      }
+    }
+  }
+
+  return arr;
+}
+
+function checkGood(arr){
+
+  for(let i=0;i<arr.length;i++){
+
+    for(let j=i+1;j<arr.length;j++){
+
+      if(arr[i] !== arr[j]) continue;
+
+      let dist = Math.abs(i-j);
+      dist = Math.min(dist, arr.length-dist);
+
+      if(dist <= 2){
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function drawWheel(rot=0){
+
+  items = getItems();
+
+  if(items.length === 0){
+
+    emptyBox.classList.remove("hidden");
+    rouletteArea.classList.add("hidden");
+    resultBox.style.display = "none";
+
+    return;
+  }
+
+  emptyBox.classList.add("hidden");
+  rouletteArea.classList.remove("hidden");
+
+  colorMap = buildColorMap(items.length);
+
+  ctx.clearRect(0,0,900,900);
+
+  const cx = 450;
+  const cy = 450;
+
+  const radius = 450;
+
+  const arc = Math.PI*2/items.length;
+
+  for(let i=0;i<items.length;i++){
+
+    const start = rot + i*arc;
+    const end = start + arc;
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,radius,start,end);
+    ctx.closePath();
+
+    ctx.fillStyle = colorMap[i];
+    ctx.fill();
+
+    ctx.save();
+
+    ctx.translate(cx,cy);
+
+    ctx.rotate(start + arc/2);
+
+    ctx.fillStyle = "#000";
+
+    ctx.font = "66px sans-serif";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(items[i], radius*0.60, 0);
+
+    ctx.restore();
+  }
+}
+
+drawWheel();
+
+textarea.addEventListener("input", ()=>{
+
+  drawWheel(rotation);
+
 });
 
-// モード
-document.getElementById("modeBtn").onclick = () => {
-  mode = (mode === "random") ? "fixed" : "random";
-  updateStatus();
-};
-
-function updateStatus() {
-  document.getElementById("modeBtn").textContent =
-    "モード: " + (mode === "fixed" ? "固定" : "ランダム");
-
-  document.getElementById("status").textContent =
-    mode === "fixed" ? "固定: " + items[forcedIndex] : "ランダム";
+function easeOutQuint(t){
+  return 1 - Math.pow(1-t,5);
 }
 
-// 回転
-function spin() {
-  let targetIndex;
+function easeInCubic(t){
+  return t*t*t;
+}
 
-  if (mode === "fixed") {
-    targetIndex = forcedIndex;
-  } else {
-    targetIndex = Math.floor(Math.random() * items.length);
+startBtn.addEventListener("click", ()=>{
+
+  if(spinning) return;
+
+  items = getItems();
+
+  if(items.length===0) return;
+
+  spinning = true;
+
+  const arc = Math.PI*2/items.length;
+
+  const winner =
+    Math.floor(Math.random()*items.length);
+
+  const pointerAngle = 0;
+
+  const targetAngle =
+    -(winner * arc + arc/2);
+
+  const safeOffset =
+    (Math.random()-0.5) * arc * 0.34;
+
+  const extraTurns =
+    Math.PI*2*(9 + Math.random()*2);
+
+  const finalRotation =
+    rotation +
+    extraTurns +
+    pointerAngle +
+    targetAngle +
+    safeOffset;
+
+  const startRotation = rotation;
+
+  const duration = 9800;
+
+  const startTime = performance.now();
+
+  function animate(now){
+
+    let t = (now-startTime)/duration;
+
+    if(t > 1) t = 1;
+
+    let eased;
+
+    if(t < 0.11){
+
+      const tt = t/0.11;
+
+      eased = easeInCubic(tt) * 0.06;
+
+    }else{
+
+      const tt = (t-0.11)/0.89;
+
+      eased = 0.06 + easeOutQuint(tt)*0.94;
+    }
+
+    rotation =
+      startRotation +
+      (finalRotation-startRotation)*eased;
+
+    drawWheel(rotation);
+
+    if(t < 1){
+
+      requestAnimationFrame(animate);
+
+    }else{
+
+      rotation = finalRotation;
+
+      drawWheel(rotation);
+
+      const normalized =
+        ((-rotation % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+
+      const actualIndex =
+        Math.floor(normalized / arc) % items.length;
+
+      resultBox.style.display = "block";
+      resultBox.style.background = colorMap[actualIndex];
+      resultBox.textContent = items[actualIndex];
+
+      spinning = false;
+    }
   }
 
-  const step = 360 / items.length;
-  const targetAngle = -(targetIndex * step + step / 2);
+  requestAnimationFrame(animate);
+});
 
-  let speed = 30;
+resetBtn.addEventListener("click", ()=>{
 
-  const interval = setInterval(() => {
-    speed *= 0.97;
-    deg += speed;
+  rotation = 0;
 
-    document.getElementById("wheel").style.transform =
-      `rotate(${deg}deg)`;
+  resultBox.style.display = "none";
 
-    if (speed < 0.5) {
-      clearInterval(interval);
+  drawWheel(rotation);
 
-      deg = Math.round(deg) + targetAngle;
-
-      document.getElementById("wheel").style.transform =
-        `rotate(${deg}deg)`;
-
-      document.getElementById("result").textContent =
-        "結果: " + items[targetIndex];
-    }
-  }, 20);
-}
-
-// リセット
-function resetWheel() {
-  deg = 0;
-  document.getElementById("wheel").style.transform = "rotate(0deg)";
-  document.getElementById("result").textContent = "";
-}
-
-createWheel();
-updateStatus();
+});
 </script>
 
 </body>
