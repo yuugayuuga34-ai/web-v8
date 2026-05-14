@@ -304,57 +304,7 @@ function buildColorMap(count){
     arr.push(BASE_COLORS[i%BASE_COLORS.length]);
   }
 
-  for(let loop=0; loop<20; loop++){
-
-    for(let i=0;i<arr.length;i++){
-
-      for(let j=i+1;j<arr.length;j++){
-
-        if(arr[i] !== arr[j]) continue;
-
-        let dist = Math.abs(i-j);
-        dist = Math.min(dist, arr.length-dist);
-
-        if(dist <= 2){
-
-          for(let k=0;k<arr.length;k++){
-
-            if(k===i || k===j) continue;
-
-            [arr[j], arr[k]] = [arr[k], arr[j]];
-
-            if(checkGood(arr)){
-              break;
-            }
-
-            [arr[j], arr[k]] = [arr[k], arr[j]];
-          }
-        }
-      }
-    }
-  }
-
   return arr;
-}
-
-function checkGood(arr){
-
-  for(let i=0;i<arr.length;i++){
-
-    for(let j=i+1;j<arr.length;j++){
-
-      if(arr[i] !== arr[j]) continue;
-
-      let dist = Math.abs(i-j);
-      dist = Math.min(dist, arr.length-dist);
-
-      if(dist <= 2){
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 function drawWheel(rot=0){
@@ -369,6 +319,10 @@ function drawWheel(rot=0){
 
     option.value=item;
     option.textContent=item;
+
+    if(item === fixedResult){
+      option.selected = true;
+    }
 
     fixedSelect.appendChild(option);
 
@@ -461,8 +415,6 @@ fixedOffBtn.addEventListener("click", ()=>{
 
   fixedResult = null;
 
-  fixedSelect.value="";
-
 });
 
 startBtn.addEventListener("click", ()=>{
@@ -489,94 +441,8 @@ startBtn.addEventListener("click", ()=>{
 
   }
 
-  const pointerAngle = 0;
+  /*
+    完全一致する角度計算
+  */
 
-  const targetAngle =
-    -(winner * arc + arc/2);
-
-  const safeOffset =
-    (Math.random()-0.5) * arc * 0.34;
-
-  const extraTurns =
-    Math.PI*2*(9 + Math.random()*2);
-
-  const finalRotation =
-    rotation +
-    extraTurns +
-    pointerAngle +
-    targetAngle +
-    safeOffset;
-
-  const startRotation = rotation;
-
-  const duration = 9800;
-
-  const startTime = performance.now();
-
-  function animate(now){
-
-    let t = (now-startTime)/duration;
-
-    if(t > 1) t = 1;
-
-    let eased;
-
-    if(t < 0.11){
-
-      const tt = t/0.11;
-
-      eased = easeInCubic(tt) * 0.06;
-
-    }else{
-
-      const tt = (t-0.11)/0.89;
-
-      eased = 0.06 + easeOutQuint(tt)*0.94;
-    }
-
-    rotation =
-      startRotation +
-      (finalRotation-startRotation)*eased;
-
-    drawWheel(rotation);
-
-    if(t < 1){
-
-      requestAnimationFrame(animate);
-
-    }else{
-
-      rotation = finalRotation;
-
-      drawWheel(rotation);
-
-      const normalized =
-        ((-rotation % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-
-      const actualIndex =
-        Math.floor(normalized / arc) % items.length;
-
-      resultBox.style.display = "block";
-      resultBox.style.background = colorMap[actualIndex];
-      resultBox.textContent = items[actualIndex];
-
-      spinning = false;
-    }
-  }
-
-  requestAnimationFrame(animate);
-});
-
-resetBtn.addEventListener("click", ()=>{
-
-  rotation = 0;
-
-  resultBox.style.display = "none";
-
-  drawWheel(rotation);
-
-});
-</script>
-
-</body>
-</html>
+  const targetRotation =
